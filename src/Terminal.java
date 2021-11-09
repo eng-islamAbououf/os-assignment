@@ -1,22 +1,27 @@
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class Terminal {
     Parser parser ;
+    Path currentPath ;
+
 
     public Terminal() {
         this.parser = new Parser();
+        currentPath = Paths.get("").toAbsolutePath() ;
     }
 
 
     //Implement each command in a method, for example:
-    public static String pwd(){
+    public String pwd(){
 
-        return Paths.get("").toAbsolutePath().toString();
+        return currentPath.toString();
     }
+
     public void ls(){
-        File file = new File(Paths.get("").toAbsolutePath().toString());
+        File file = new File(currentPath.toString());
 
         // returns an array of all files
         String[] fileList = file.list();
@@ -28,7 +33,7 @@ public class Terminal {
     }
 
     public void lsReverse(){
-        File file = new File(Paths.get("").toAbsolutePath().toString());
+        File file = new File(currentPath.toString());
 
         // returns an array of all files
         String[] fileList = file.list();
