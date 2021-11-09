@@ -19,7 +19,10 @@ public class Terminal {
 
         return currentPath.toString();
     }
+    public void echo(String x){
 
+        System.out.println(x);;
+    }
     public void ls(){
         File file = new File(currentPath.toString());
 
@@ -53,6 +56,8 @@ public class Terminal {
             ls();
         }else if (parser.getCommandName().equalsIgnoreCase("ls -r")){
             lsReverse();
+        }else if (parser.getCommandName().equalsIgnoreCase("echo")){
+            echo(parser.getArgs()[0]);
         }
     }
 
