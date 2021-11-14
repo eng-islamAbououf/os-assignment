@@ -1,9 +1,7 @@
 import java.io.*;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.Arrays;
+import java.util.Scanner;
 
 public class Terminal {
     Parser parser ;
@@ -189,13 +187,61 @@ public class Terminal {
                 mkdir(parser.getArgs()[0]);
             }else if (parser.getCommandName().equalsIgnoreCase("rmdir")){
                 rmdir(parser.getArgs()[0]);
+            }else if (parser.getCommandName().equalsIgnoreCase("cat")){
+                if (parser.getArgs().length == 2)
+                    cat(parser.getArgs()[0]);
+                else
+                    cat(parser.getArgs()[0],parser.getArgs()[1]);
             }else if (parser.getCommandName().equalsIgnoreCase("cp")){
-                echo(parser.getArgs()[0]);
+                cp(parser.getArgs()[0],parser.getArgs()[1]);
             }else if (parser.getCommandName().equalsIgnoreCase("cp -r")){
+                cp(parser.getArgs()[0], parser.getArgs()[1]);
+            }else if (parser.getCommandName().equalsIgnoreCase("touch")){
+                touch(parser.getArgs()[0]);
+            }else if (parser.getCommandName().equalsIgnoreCase("echo")){
                 echo(parser.getArgs()[0]);
             }
         } else {
-            System.out.println("flase");
+            System.out.println("Error : Command name Not Found !");
+        }
+
+    }
+    public void cp(String sourcePath, String destinationPath )throws IOException,NoSuchFileException{
+        File src = makeAbsolute(sourcePath);
+        if(!src.exists())
+            throw new NoSuchFileException(src.getAbsolutePath(),null,"does not exist");
+        File dst = makeAbsolute(destinationPath);
+        if(!dst.exists()){
+            if(dst.isDirectory())
+                throw new NoSuchFileException(dst.getAbsolutePath(),null,"does not exist");
+        }
+        else
+            Files.copy(src.toPath(),dst.toPath().resolve(src.toPath().getFileName()),StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    public void touch(String source) throws IOException {
+        File src = makeAbsolute(source);
+        if(src.exists())
+            throw new IOException("Directory already exists.");
+        if(src.createNewFile())
+            System.out.println(src.getAbsolutePath().substring(src.getAbsolutePath().lastIndexOf('\\')+1) + " created!!");
+    }
+
+    public static void main(String[] args)  {
+        Terminal terminal = new Terminal() ;
+        Scanner input = new Scanner(System.in) ;
+        String x ;
+        while (true){
+            System.out.print("> ");
+            x = input.nextLine();
+            if (x.equalsIgnoreCase("exit"))
+                break;
+            try {
+                terminal.chooseCommandAction(x.trim());
+            }catch (Exception exception){
+                System.out.println(exception.getMessage());
+                exception.printStackTrace();
+            }
         }
 
     }

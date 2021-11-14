@@ -33,13 +33,19 @@ public class Parser {
             commandName = input ;
             args = new String[1] ;
             s = true ;
-        }else {
+        } else {
             for (String x : commands){
                 if (x.equalsIgnoreCase(input.substring(0,input.indexOf(' '))))
                 {
                     commandName = input.substring(0,input.indexOf(' ')) ;
-                    args = new String[getCountOfSpaces(input)] ;
-                    storeArg(input.substring(input.indexOf(' ')+1));
+                    if (commandName.equalsIgnoreCase("echo")){
+                        args = new String[1] ;
+                        args[0] = input.substring(input.indexOf(' ')+1) ;
+                    }else{
+                        args = new String[getCountOfSpaces(input)] ;
+                        storeArg(input.substring(input.indexOf(' ')+1));
+                    }
+
                     s = true ;
                     break;
                 }
