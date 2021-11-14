@@ -1,13 +1,14 @@
+import java.io.IOException;
 import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Terminal terminal = new Terminal() ;
         Scanner input = new Scanner(System.in) ;
         String x ;
         while (true){
-            System.out.print(">");
+            System.out.print("> ");
             x = input.nextLine();
             if (x.equalsIgnoreCase("exit"))
                 break;
