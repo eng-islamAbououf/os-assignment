@@ -27,9 +27,9 @@ public class Parser {
     public boolean parse(String input) {
         boolean s = false ;
         if (input.equalsIgnoreCase(commands.get(0))
-        || input.equalsIgnoreCase(commands.get(1))
-        || input.equalsIgnoreCase(commands.get(2))
-        || input.equalsIgnoreCase(commands.get(4))){
+                || input.equalsIgnoreCase(commands.get(1))
+                || input.equalsIgnoreCase(commands.get(2))
+                || input.equalsIgnoreCase(commands.get(4))){
             commandName = input ;
             args = new String[1] ;
             s = true ;
@@ -72,37 +72,6 @@ public class Parser {
         }
         args[i] = temp ;
     }
-
-
-//    private void set(String name,String ar){
-//        if (name.equalsIgnoreCase(commands.get(3))){
-//            args = new String[1] ;
-//            args[0] = ar ;
-//        }else if (name.equalsIgnoreCase(commands.get(4))){
-//            if (!ar.isEmpty()) {
-//                args = new String[1];
-//                args[0] = ar;
-//            }
-//        }else  if (name.equalsIgnoreCase(commands.get(5))){
-//
-//        }else  if (name.equalsIgnoreCase(commands.get(6))){
-//            args = new String[1] ;
-//            args[0] = ar ;
-//        }else if (name.equalsIgnoreCase("echo")){
-//            args = new String[1] ;
-//            args[0] = ar ;
-//        }else if (name.equalsIgnoreCase("echo")){
-//            args = new String[1] ;
-//            args[0] = ar ;
-//        }else if (name.equalsIgnoreCase("echo")){
-//            args = new String[1] ;
-//            args[0] = ar ;
-//        }else if (name.equalsIgnoreCase("echo")){
-//            args = new String[1] ;
-//            args[0] = ar ;
-//        }else
-//    }
-
 
 
     public String getCommandName() {
