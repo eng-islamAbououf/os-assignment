@@ -193,8 +193,36 @@ public class Terminal {
     }
 
     //Copies the first directory into the second one
-    public void cpr(Path source , Path destination) throws IOException {
-        Files.copy(source, destination);
+    public void cpr (File src , File dest) throws IOException {
+
+        if(src.isDirectory()){
+            if(!dest.exists()){
+                dest.mkdir();
+            }
+
+            String files[] = src.list();
+
+            for (String file : files) {
+                File srcFile = new File(src, file);
+                File destFile = new File(dest, file);
+
+                cpr(srcFile,destFile);
+            }
+
+        } else {
+            InputStream in = new FileInputStream(src);
+            OutputStream out = new FileOutputStream(dest);
+
+            byte[] buffer = new byte[1024];
+
+            int length;
+            while ((length = in.read(buffer)) > 0){
+                out.write(buffer, 0, length);
+            }
+
+            in.close();
+            out.close();
+        }
     }
 
     //This method will choose the suitable command method to be called
@@ -226,7 +254,9 @@ public class Terminal {
             }else if (parser.getCommandName().equalsIgnoreCase("cp")){
                 cp(parser.getArgs()[0],parser.getArgs()[1]);
             }else if (parser.getCommandName().equalsIgnoreCase("cp -r")){
-                cp(parser.getArgs()[0], parser.getArgs()[1]);
+                File src = makeAbsolute(parser.getArgs()[0]) ;
+                File dest = makeAbsolute(parser.getArgs()[1]) ;
+                cpr(src , dest);
             }else if (parser.getCommandName().equalsIgnoreCase("touch")){
                 touch(parser.getArgs()[0]);
             }else if (parser.getCommandName().equalsIgnoreCase("echo")){
