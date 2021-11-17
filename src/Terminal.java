@@ -65,16 +65,24 @@ public class Terminal {
         Arrays.sort(myFileList);
         // true -> print array ascending
         // false -> print array desc
+        int size  = 0 ;
         if (status){
             for(String str : myFileList) {
-                System.out.println(str);
+                System.out.print(str + "\t");
+                size++ ;
+                if (size%6==0)
+                    System.out.println();
             }
         }
         else {
             for(int i= myFileList.length-1; i>=0 ; i--) {
-                System.out.println(myFileList[i]);
+                System.out.print(myFileList[i] + "\t");
+                size++ ;
+                if (size%6==0)
+                    System.out.println();
             }
         }
+        System.out.println();
     }
 
     //creates a new directory with the given name in a given directory
@@ -89,53 +97,86 @@ public class Terminal {
             throw new IOException("Cannot create directory.");
     }
 
-    public void mkdir(String[] args) throws IOException {
-        File f = currentDir ;
-        boolean x = true ;
-        if (args[args.length-1].contains(":\\")){
-            changeDirectory(args[args.length-1]);
-            x = false ;
+    public void mkdir(String[] args) {
+        for (String name : args){
+            try {
+                createDir(name);
+
+            }catch (IOException exception){
+                System.out.println(exception.getMessage());
+            }
         }
-        for (int i =0 ; i < args.length-1 ; i++){
-            createDir(args[i]);
-        }
-        if (x)
-            createDir(args[args.length-1]);
-        currentDir = f ;
     }
 
-    //deletes empty directory
-    public void rmdir(String sourcePath)throws IOException{
-        File myFile = makeAbsolute(sourcePath);
+    private void removeDir(String name ) throws IOException {
+        File myFile = makeAbsolute(name);
         if(!myFile.exists())
             throw new IOException(myFile.getAbsolutePath()+" does not exist");
         if(myFile.isFile())
             throw new IOException("Cannot delete file");
         else if(!myFile.delete())
             throw new IOException("Cannot delete non-empty directory.");
+
+    }
+
+    //deletes empty directory
+    public void rmdir(String sourcePath)throws IOException{
+        if (sourcePath.equalsIgnoreCase("*")){
+            File myFile = new File(currentDir.getAbsolutePath());
+            String[] myFileList = myFile.list();
+            for (String path : myFileList){
+                removeDir(path);
+            }
+        }else {
+            removeDir(sourcePath);
+        }
+
     }
 
     public void touch(String source) throws IOException {
-        if (!hasExtension(source))
-            source += ".txt";
+//        if (!hasExtension(source))
+//            source += ".txt";
         File src = makeAbsolute(source);
         if(src.exists())
             throw new IOException("Directory already exists.");
         if(src.createNewFile())
-            System.out.println(src.getAbsolutePath().substring(src.getAbsolutePath().lastIndexOf('\\')+1) + " created!!");
+            System.out.print("");
     }
 
-    public void cp(String sourcePath, String destinationPath )throws IOException{
-        File src = makeAbsolute(sourcePath);
-        if(!src.exists())
-            throw new IOException(src.getAbsolutePath()+" does not exist");
-        File dst = makeAbsolute(destinationPath);
-        if(!dst.exists()){
-            if(dst.isDirectory())
-                throw new IOException(dst.getAbsolutePath()+" does not exist");
+    public void cp(String source,String dest)throws IOException
+    {
+        File infile = makeAbsolute(source);
+        File outfile = makeAbsolute(dest);
+        if (infile.isDirectory())
+            throw new IOException("cp : can't work with directory ; you can use cp -r") ;
+        if (!outfile.isDirectory()){
+            if(!infile.exists() || !outfile.exists())
+                throw new IOException("No such file exists.");
+            copyContent(infile, outfile);
+        }else {
+            File f = currentDir ;
+            changeDirectory(dest);
+            touch(source);
+            outfile = makeAbsolute(source) ;
+            copyContent(infile, outfile);
+            currentDir = f ;
         }
-        else
-            Files.copy(src.toPath(),dst.toPath().resolve(src.toPath().getFileName()),StandardCopyOption.REPLACE_EXISTING);
+
+    }
+
+    private void copyContent(File infile, File outfile) throws IOException {
+        FileInputStream reader = new FileInputStream(infile);
+        FileOutputStream writer = new FileOutputStream(outfile,true);
+
+        byte[] buffer = new byte[1024];
+
+        int length;
+        while ((length = reader.read(buffer)) > 0)
+        {
+            writer.write(buffer, 0, length);
+        }
+        reader.close();
+        writer.close();
     }
 
     public void cpr(File src , File dest) throws IOException {
@@ -150,24 +191,13 @@ public class Terminal {
                 throw new IOException("No such file in this directory !!");
 
             for (String file : myFileList) {
-                File srcFile = new File(src, file);
+                File srcFile = new File(src,file);
                 File destFile = new File(dest, file);
                 cpr(srcFile,destFile);
             }
 
         } else {
-            InputStream in = new FileInputStream(src);
-            OutputStream out = new FileOutputStream(dest);
-
-            byte[] buffer = new byte[1024];
-
-            int length;
-            while ((length = in.read(buffer)) > 0){
-                out.write(buffer, 0, length);
-            }
-
-            in.close();
-            out.close();
+            copyContent(src, dest);
         }
     }
 
@@ -177,13 +207,15 @@ public class Terminal {
         if(!myFile.exists())
             throw new IOException("no such file!");
         else if(myFile.isDirectory())
-            throw new IOException("Cannot delete directory.");
+            throw new IOException("Cannot delete directory. you can use 'rmdir' ");
         else if (!myFile.delete())
             throw  new IOException("Cannot delete file.");
     }
 
     public void cat(String f1) throws IOException {
         File file = makeAbsolute(f1);
+        if (file.isDirectory())
+            throw new IOException("cat : " +f1 + " : Is a Directory") ;
         if(file.exists()) {
             BufferedReader in = new BufferedReader(new FileReader(file.getAbsolutePath()));
             String line;
@@ -193,39 +225,8 @@ public class Terminal {
             in.close();
         }
         else
-            throw new NoSuchFileException(file.getAbsolutePath()+" does not exist");
+            throw new IOException(file.getAbsolutePath()+" does not exist");
     }
-
-    public void cat(String source,String dest)throws IOException
-    {
-        FileInputStream reader;
-        FileOutputStream writer ;
-
-        File infile = makeAbsolute(source);
-        File outfile = makeAbsolute(dest);
-        if(!infile.exists() || !outfile.exists())
-            throw new IOException("No such file exists.");
-        reader = new FileInputStream(infile);
-        writer = new FileOutputStream(outfile,true);
-
-        byte[] buffer = new byte[1024];
-
-        int length;
-        while ((length = reader.read(buffer)) > 0)
-        {
-            writer.write(buffer, 0, length);
-        }
-        try (BufferedReader br = new BufferedReader(new FileReader(outfile)))
-        {
-            String line;
-            while ((line = br.readLine()) != null) {
-                System.out.println(line);
-            }
-        }
-        reader.close();
-        writer.close();
-    }
-
 
     //This method will choose the suitable command method to be called
     public void chooseCommandAction(String command) throws IOException {
@@ -263,16 +264,14 @@ public class Terminal {
                     rmdir(arg);
                 }
             }else if (parser.getCommandName().equalsIgnoreCase("cat")){
-                if (parser.getArgs().length == 1)
-                    cat(parser.getArgs()[0]);
-                else if (parser.getArgs().length == 2)
-                    cat(parser.getArgs()[0],parser.getArgs()[1]);
-                else
-                    System.out.println(ERROR_MSG_ARG);
+
+                for (String i : parser.getArgs()){
+                    cat(i);
+                }
             }else if (parser.getCommandName().equalsIgnoreCase("cp")){
                 if (parser.getArgs()[0].equalsIgnoreCase("-r")){
                     if (parser.getArgs().length == 3){
-                        cpr(makeAbsolute(parser.getArgs()[1]), makeAbsolute(parser.getArgs()[2]));
+                        cpr(makeAbsolute(parser.getArgs()[1]), makeAbsolute(parser.getArgs()[2]+"\\"+parser.getArgs()[1]));
                     }else
                         System.out.println(ERROR_MSG_ARG);
                 }else {
@@ -302,7 +301,7 @@ public class Terminal {
         Scanner input = new Scanner(System.in) ;
         String x ;
         while (true){
-            System.out.print("> ");
+            System.out.print("~$ ");
             x = input.nextLine();
             if (x.equalsIgnoreCase("exit"))
                 break;
@@ -310,7 +309,7 @@ public class Terminal {
                 terminal.chooseCommandAction(x.trim());
             }catch (Exception exception){
                 System.out.println(exception.getMessage());
-                exception.printStackTrace();
+                //exception.printStackTrace();
             }
         }
 
