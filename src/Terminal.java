@@ -3,6 +3,109 @@ import java.nio.file.*;
 import java.util.Arrays;
 import java.util.Scanner;
 
+import java.util.ArrayList;
+
+class Parser {
+
+    private String commandName ;
+    private String[] args;
+    private final ArrayList<String> commands = new ArrayList<>();
+
+    public Parser() {
+        commandName = "" ;
+        addCommands();
+    }
+    private void addCommands(){
+        commands.add("pwd") ;
+        commands.add("ls") ;
+        commands.add("echo") ;
+        commands.add("cd") ;
+        commands.add("cat") ;
+        commands.add("rm") ;
+        commands.add("mkdir") ;
+        commands.add("rmdir") ;
+        commands.add("touch") ;
+        commands.add("cp") ;
+    }
+
+    public boolean parse(String input) {
+        boolean flag = false ;
+        if (input.lastIndexOf(' ') == -1){
+            for (String x : commands){
+                if (x.equalsIgnoreCase(input)) {
+                    commandName = input;
+                    args = new String[1];
+                    flag = true;
+                    break;
+                }
+            }
+
+        } else {
+            commandName = input.substring(0,input.indexOf(' ')) ;
+            for (String x : commands){
+                if (x.equalsIgnoreCase(commandName))
+                {
+                    if (commandName.equalsIgnoreCase("echo")){
+                        args = new String[1] ;
+                        args[0] = input.substring(input.indexOf(' ')+1) ;
+                    }else{
+                        args = new String[getCountOfSpaces(input)] ;
+                        storeArg(input.substring(input.indexOf(' ')+1));
+                    }
+
+                    flag = true ;
+                    break;
+                }
+            }
+        }
+
+        return flag ;
+    }
+
+    private void storeArg(String inp){
+        StringBuilder temp = new StringBuilder();
+        int index = 0  , i= 0;
+        while (index<inp.length()){
+            if (inp.charAt(index)==' '){
+                args[i] = temp.toString();
+                temp = new StringBuilder();
+                i++ ;
+            }else {
+                temp.append(inp.charAt(index));
+            }
+
+            index++;
+        }
+        args[i] = temp.toString();
+    }
+
+
+    public String getCommandName() {
+        return commandName;
+    }
+
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
+    }
+
+    public String[] getArgs() {
+        return args;
+    }
+
+    public void setArgs(String[] args) {
+        this.args = args;
+    }
+    private int getCountOfSpaces(String args){
+        int count = 0 ;
+        for (char c : args.toCharArray()){
+            if (c==' ')
+                count ++ ;
+        }
+        return count ;
+    }
+}
+
+
 public class Terminal {
     Parser parser ;
     File currentDir ;
@@ -25,11 +128,11 @@ public class Terminal {
         return file.getAbsoluteFile();
     }
 
-    protected boolean hasExtension(String src) {
-        return src.lastIndexOf('.') != -1;
-    }
+//    protected boolean hasExtension(String src) {
+//        return src.lastIndexOf('.') != -1;
+//    }
 
-    protected void echo(String x){
+    public void echo(String x){
         System.out.println(x);
     }
 
@@ -103,7 +206,7 @@ public class Terminal {
                 createDir(name);
 
             }catch (IOException exception){
-                System.out.println(exception.getMessage());
+                echo(exception.getMessage());
             }
         }
     }
@@ -124,6 +227,8 @@ public class Terminal {
         if (sourcePath.equalsIgnoreCase("*")){
             File myFile = new File(currentDir.getAbsolutePath());
             String[] myFileList = myFile.list();
+            if (myFileList == null)
+                throw new IOException("No such file in this directory !!");
             for (String path : myFileList){
                 removeDir(path);
             }
@@ -220,7 +325,7 @@ public class Terminal {
             BufferedReader in = new BufferedReader(new FileReader(file.getAbsolutePath()));
             String line;
             while ((line = in.readLine()) != null) {
-                System.out.println(line);
+                echo(line);
             }
             in.close();
         }
@@ -234,9 +339,9 @@ public class Terminal {
             if (parser.getCommandName().equalsIgnoreCase("pwd")){
 
                 if (parser.getArgs()[0] == null)
-                    System.out.println(pwd());
+                    echo(pwd());
                 else
-                    System.out.println(ERROR_MSG_ARG);
+                    echo(ERROR_MSG_ARG);
 
             }else if (parser.getCommandName().equalsIgnoreCase("ls")){
 
@@ -245,7 +350,7 @@ public class Terminal {
                 else if (parser.getArgs()[0].equalsIgnoreCase("-r"))
                     ls(false);
                 else
-                    System.out.println(ERROR_MSG_ARG);
+                    echo(ERROR_MSG_ARG);
 
             }else if (parser.getCommandName().equalsIgnoreCase("cd")){
                 if (parser.getArgs()[0] == null){
@@ -273,24 +378,24 @@ public class Terminal {
                     if (parser.getArgs().length == 3){
                         cpr(makeAbsolute(parser.getArgs()[1]), makeAbsolute(parser.getArgs()[2]+"\\"+parser.getArgs()[1]));
                     }else
-                        System.out.println(ERROR_MSG_ARG);
+                        echo(ERROR_MSG_ARG);
                 }else {
                     if (parser.getArgs().length == 2){
                         cp(parser.getArgs()[0],parser.getArgs()[1]);
                     }else
-                        System.out.println(ERROR_MSG_ARG);
+                        echo(ERROR_MSG_ARG);
                 }
             }else if (parser.getCommandName().equalsIgnoreCase("touch")){
                 touch(parser.getArgs()[0]);
             }else if (parser.getCommandName().equalsIgnoreCase("echo")){
 
                 if (parser.getArgs()[0] == null)
-                    System.out.println(ERROR_MSG_ARG);
+                    echo(ERROR_MSG_ARG);
                 else
                     echo(parser.getArgs()[0]);
             }
         } else {
-            System.out.println(ERROR_MSG_NAME);
+            echo(ERROR_MSG_NAME);
         }
 
     }
