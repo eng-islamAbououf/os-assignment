@@ -5,207 +5,153 @@ import java.util.Scanner;
 
 public class Terminal {
     Parser parser ;
-    File currentDirectory;
-    Path currentPath ;
+    File currentDir ;
+
+    final String ERROR_MSG_ARG = "Error : Invalid Argument" ;
+    final String ERROR_MSG_NAME = "Error : Command name Not Found !" ;
 
 
     public Terminal() {
         this.parser = new Parser();
-        currentPath = Paths.get("").toAbsolutePath() ;
-        currentDirectory = new File(currentPath.toString()) ;
-    }
-    //Implement each command in a method, for example:
-
-    //Display the current path
-    public String pwd(){
-
-        return currentPath.toString();
-    }
-
-    //Display the given argument
-    public void echo(String Input){
-
-        System.out.println(Input);;
-    }
-
-    //Display the content of the directory sorted alphabetically
-    public void ls(){
-        File file = new File(currentPath.toString());
-
-        // returns an array of all files
-        String[] fileList = file.list();
-        Arrays.sort(fileList);
-        for(String str : fileList) {
-            System.out.println(str);
-        }
-
+        currentDir = new File(Paths.get("").toAbsolutePath().toString()) ;
     }
 
     //given a relative path changed into absolute, if directory exists
-    public File makeAbsolute(String sourcePath){
+    protected File makeAbsolute(String sourcePath){
         File file = new File(sourcePath);
         if(!file.isAbsolute()) {
-            file = new File(currentDirectory.getAbsolutePath(), sourcePath);
+            file = new File(currentDir.getAbsolutePath(), sourcePath);
         }
         return file.getAbsoluteFile();
     }
 
-    //deletes file given specific path
-    public void rm(String sourcePath) throws IOException, NoSuchFileException {
-        File file = makeAbsolute(sourcePath);
-        if(!file.exists())
-            throw new NoSuchFileException(sourcePath,null,"No File Founded.");
-        else if(file.isDirectory())
-            throw new IOException("Can't Delete the Directory.");
-        else if (!file.delete())
-            throw  new IOException("Can't Delete the File");
+    protected boolean hasExtension(String src) {
+        return src.lastIndexOf('.') != -1;
     }
 
-    //Display the content of the directory in reverse order
-    public void lsReverse(){
-        File file = new File(currentDirectory.getAbsolutePath());
-
-        // returns an array of all files
-        String[] fileList = file.list();
-        Arrays.sort(fileList);
-        for(int i= fileList.length-1; i>=0 ; i--) {
-            System.out.println(fileList[i]);
-        }
+    protected void echo(String x){
+        System.out.println(x);
     }
 
+    public String pwd(){
+        return currentDir.getAbsolutePath();
+    }
 
-    //changes the current directory to the given one
-    public void cd(String sourcePath)throws NoSuchFileException,IOException{
-        if(sourcePath.equals("..")){
-            String parent = currentDirectory.getParent();
-            File file = new File(parent);
-            currentDirectory = file.getAbsoluteFile();
+    public void changeDirectory(){
+        currentDir = new File(System.getProperty("user.home"));
+    }
+
+    public void changeDirectory(String dest)throws IOException{
+        if(dest.equals("..")){
+            currentDir = new File(currentDir.getParent()).getAbsoluteFile();
         }
         else{
-            File file = makeAbsolute(sourcePath);
-            if(!file.exists()){
-                throw new NoSuchFileException(file.getAbsolutePath(),null,"No File Exist.");
+            File myFile = makeAbsolute(dest);
+            if(!myFile.exists()){
+                throw new IOException(myFile.getAbsolutePath() + " does not exist");
             }
-            if(file.isFile()){
-                throw new IOException("Can't cd into file.");
+            if(myFile.isFile()){
+                throw new IOException("Can't cd into file");
             }
-            else currentDirectory = file.getAbsoluteFile();
+            else currentDir = myFile.getAbsoluteFile();
         }
-        currentPath= currentDirectory.toPath();
     }
 
-    //changes into default directory
-    public void cd(){
-
-        currentDirectory = new File(System.getProperty("user.home"));
-        currentPath = currentDirectory.toPath();
+    public void ls(boolean status) throws IOException {
+        File myFile = new File(currentDir.getAbsolutePath());
+        String[] myFileList = myFile.list();
+        if (myFileList == null)
+            throw new IOException("No such file in this directory !!");
+        Arrays.sort(myFileList);
+        // true -> print array ascending
+        // false -> print array desc
+        if (status){
+            for(String str : myFileList) {
+                System.out.println(str);
+            }
+        }
+        else {
+            for(int i= myFileList.length-1; i>=0 ; i--) {
+                System.out.println(myFileList[i]);
+            }
+        }
     }
 
     //creates a new directory with the given name in a given directory
-    public void mkdir(String newDirectory)throws NoSuchFileException,IOException{
-        File file = makeAbsolute(newDirectory);
-        if(!file.getParentFile().exists())
-            throw new NoSuchFileException(newDirectory,null,"Doesn't Exist.");
-        if(file.exists())
-            throw new IOException("Directory Already Exists.");
-        boolean created = file.mkdir();
+    private void createDir(String newDir)throws IOException{
+        File myFile = makeAbsolute(newDir);
+        if(!myFile.getParentFile().exists())
+            throw new IOException(newDir + " does not exist.");
+        if(myFile.exists())
+            throw new IOException("Directory already exists.");
+        boolean created = myFile.mkdir();
         if(!created)
-            throw new IOException("Can't Create Directory.");
+            throw new IOException("Cannot create directory.");
+    }
+
+    public void mkdir(String[] args) throws IOException {
+        File f = currentDir ;
+        boolean x = true ;
+        if (args[args.length-1].contains(":\\")){
+            changeDirectory(args[args.length-1]);
+            x = false ;
+        }
+        for (int i =0 ; i < args.length-1 ; i++){
+            createDir(args[i]);
+        }
+        if (x)
+            createDir(args[args.length-1]);
+        currentDir = f ;
     }
 
     //deletes empty directory
-    public void rmdir(String sourcePath)throws DirectoryNotEmptyException,NoSuchFileException,IOException{
-        File file = makeAbsolute(sourcePath);
-        if(!file.exists())
-            throw new NoSuchFileException(file.getAbsolutePath(),null,"Doesn't Exist.");
-        if(file.isFile())
-            throw new IOException("Can't Delete The File");
-        else if(!file.delete())
-            throw new DirectoryNotEmptyException("Can't Delete a non empty Directory.");
-    }
-    // Display the content of the file
-    public void cat(String fileName) throws NoSuchFileException,IOException {
-        File file = makeAbsolute(fileName);
-        if(file.exists()) {
-            BufferedReader in = new BufferedReader(new FileReader(file.getAbsolutePath()));
-            String line;
-            while ((line = in.readLine()) != null) {
-                System.out.println(line);
-            }
-            in.close();
-        }
-        else
-            throw new NoSuchFileException(file.getAbsolutePath(),null,"Doesn't Exist.");
+    public void rmdir(String sourcePath)throws IOException{
+        File myFile = makeAbsolute(sourcePath);
+        if(!myFile.exists())
+            throw new IOException(myFile.getAbsolutePath()+" does not exist");
+        if(myFile.isFile())
+            throw new IOException("Cannot delete file");
+        else if(!myFile.delete())
+            throw new IOException("Cannot delete non-empty directory.");
     }
 
-    //concatenates files and displays their content
-    public void cat(String source,String destination)throws IOException
-    {
-        FileInputStream instream = null;
-        FileOutputStream outstream = null;
-
-        File infile = makeAbsolute(source);
-        File outfile = makeAbsolute(destination);
-        if(!infile.exists() || !outfile.exists())
-            throw new IOException("No File Exists.");
-        instream = new FileInputStream(infile);
-        outstream = new FileOutputStream(outfile,true);
-
-        byte[] buffer = new byte[1024];
-
-        int length;
-        while ((length = instream.read(buffer)) > 0)
-        {
-            outstream.write(buffer, 0, length);
-        }
-        try (BufferedReader br = new BufferedReader(new FileReader(outfile)))
-        {
-            String line;
-            while ((line = br.readLine()) != null) {
-                System.out.println(line);
-            }
-        }
-        instream.close();
-        outstream.close();
-    }
-
-    //Copies the first file into the second one
-    public void cp(String sourcePath, String destinationPath )throws IOException,NoSuchFileException{
-        File source = makeAbsolute(sourcePath);
-        if(!source.exists())
-            throw new NoSuchFileException(source.getAbsolutePath(),null,"Doesn't Exist.");
-        File destination = makeAbsolute(destinationPath);
-        if(!destination.exists()){
-            if(destination.isDirectory())
-                throw new NoSuchFileException(destination.getAbsolutePath(),null,"Doesn't Exist.");
-        }
-        else
-            Files.copy(source.toPath(),destination.toPath().resolve(source.toPath().getFileName()),StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    //Create a File from a given path
     public void touch(String source) throws IOException {
+        if (!hasExtension(source))
+            source += ".txt";
         File src = makeAbsolute(source);
         if(src.exists())
-            throw new IOException("Directory Exists.");
+            throw new IOException("Directory already exists.");
         if(src.createNewFile())
-            System.out.println(src.getAbsolutePath().substring(src.getAbsolutePath().lastIndexOf('\\')+1) + "Created The new File.");
+            System.out.println(src.getAbsolutePath().substring(src.getAbsolutePath().lastIndexOf('\\')+1) + " created!!");
     }
 
-    //Copies the first directory into the second one
-    public void cpr (File src , File dest) throws IOException {
+    public void cp(String sourcePath, String destinationPath )throws IOException{
+        File src = makeAbsolute(sourcePath);
+        if(!src.exists())
+            throw new IOException(src.getAbsolutePath()+" does not exist");
+        File dst = makeAbsolute(destinationPath);
+        if(!dst.exists()){
+            if(dst.isDirectory())
+                throw new IOException(dst.getAbsolutePath()+" does not exist");
+        }
+        else
+            Files.copy(src.toPath(),dst.toPath().resolve(src.toPath().getFileName()),StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    public void cpr(File src , File dest) throws IOException {
 
         if(src.isDirectory()){
             if(!dest.exists()){
                 dest.mkdir();
             }
 
-            String files[] = src.list();
+            String[] myFileList = src.list();
+            if (myFileList == null)
+                throw new IOException("No such file in this directory !!");
 
-            for (String file : files) {
+            for (String file : myFileList) {
                 File srcFile = new File(src, file);
                 File destFile = new File(dest, file);
-
                 cpr(srcFile,destFile);
             }
 
@@ -225,49 +171,130 @@ public class Terminal {
         }
     }
 
+    //deletes file given specific path
+    public void remove(String sourcePath) throws IOException{
+        File myFile = makeAbsolute(sourcePath);
+        if(!myFile.exists())
+            throw new IOException("no such file!");
+        else if(myFile.isDirectory())
+            throw new IOException("Cannot delete directory.");
+        else if (!myFile.delete())
+            throw  new IOException("Cannot delete file.");
+    }
+
+    public void cat(String f1) throws IOException {
+        File file = makeAbsolute(f1);
+        if(file.exists()) {
+            BufferedReader in = new BufferedReader(new FileReader(file.getAbsolutePath()));
+            String line;
+            while ((line = in.readLine()) != null) {
+                System.out.println(line);
+            }
+            in.close();
+        }
+        else
+            throw new NoSuchFileException(file.getAbsolutePath()+" does not exist");
+    }
+
+    public void cat(String source,String dest)throws IOException
+    {
+        FileInputStream reader;
+        FileOutputStream writer ;
+
+        File infile = makeAbsolute(source);
+        File outfile = makeAbsolute(dest);
+        if(!infile.exists() || !outfile.exists())
+            throw new IOException("No such file exists.");
+        reader = new FileInputStream(infile);
+        writer = new FileOutputStream(outfile,true);
+
+        byte[] buffer = new byte[1024];
+
+        int length;
+        while ((length = reader.read(buffer)) > 0)
+        {
+            writer.write(buffer, 0, length);
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(outfile)))
+        {
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+        }
+        reader.close();
+        writer.close();
+    }
+
+
     //This method will choose the suitable command method to be called
     public void chooseCommandAction(String command) throws IOException {
         if (parser.parse(command)){
             if (parser.getCommandName().equalsIgnoreCase("pwd")){
-                System.out.println(pwd());
+
+                if (parser.getArgs()[0] == null)
+                    System.out.println(pwd());
+                else
+                    System.out.println(ERROR_MSG_ARG);
+
             }else if (parser.getCommandName().equalsIgnoreCase("ls")){
-                ls();
-            }else if (parser.getCommandName().equalsIgnoreCase("ls -r")){
-                lsReverse();
+
+                if (parser.getArgs()[0] == null)
+                    ls(true);
+                else if (parser.getArgs()[0].equalsIgnoreCase("-r"))
+                    ls(false);
+                else
+                    System.out.println(ERROR_MSG_ARG);
+
             }else if (parser.getCommandName().equalsIgnoreCase("cd")){
-                if (parser.getArgs().length == 1){
-                    cd() ;
+                if (parser.getArgs()[0] == null){
+                    changeDirectory();
                 }else {
-                    cd(parser.getArgs()[0]);
+                    changeDirectory(parser.getArgs()[0]);
                 }
             }else if (parser.getCommandName().equalsIgnoreCase("rm")){
-                rm(parser.getArgs()[0]);
+                for (String arg : parser.getArgs()){
+                    remove(arg);
+                }
             }else if (parser.getCommandName().equalsIgnoreCase("mkdir")){
-                mkdir(parser.getArgs()[0]);
+                mkdir(parser.getArgs());
             }else if (parser.getCommandName().equalsIgnoreCase("rmdir")){
-                rmdir(parser.getArgs()[0]);
+                for (String arg : parser.getArgs()){
+                    rmdir(arg);
+                }
             }else if (parser.getCommandName().equalsIgnoreCase("cat")){
-                if (parser.getArgs().length == 2)
+                if (parser.getArgs().length == 1)
                     cat(parser.getArgs()[0]);
-                else
+                else if (parser.getArgs().length == 2)
                     cat(parser.getArgs()[0],parser.getArgs()[1]);
+                else
+                    System.out.println(ERROR_MSG_ARG);
             }else if (parser.getCommandName().equalsIgnoreCase("cp")){
-                cp(parser.getArgs()[0],parser.getArgs()[1]);
-            }else if (parser.getCommandName().equalsIgnoreCase("cp -r")){
-                File src = makeAbsolute(parser.getArgs()[0]) ;
-                File dest = makeAbsolute(parser.getArgs()[1]) ;
-                cpr(src , dest);
+                if (parser.getArgs()[0].equalsIgnoreCase("-r")){
+                    if (parser.getArgs().length == 3){
+                        cpr(makeAbsolute(parser.getArgs()[1]), makeAbsolute(parser.getArgs()[2]));
+                    }else
+                        System.out.println(ERROR_MSG_ARG);
+                }else {
+                    if (parser.getArgs().length == 2){
+                        cp(parser.getArgs()[0],parser.getArgs()[1]);
+                    }else
+                        System.out.println(ERROR_MSG_ARG);
+                }
             }else if (parser.getCommandName().equalsIgnoreCase("touch")){
                 touch(parser.getArgs()[0]);
             }else if (parser.getCommandName().equalsIgnoreCase("echo")){
-                echo(parser.getArgs()[0]);
+
+                if (parser.getArgs()[0] == null)
+                    System.out.println(ERROR_MSG_ARG);
+                else
+                    echo(parser.getArgs()[0]);
             }
         } else {
-            System.out.println("Error : Command name Not Found !");
+            System.out.println(ERROR_MSG_NAME);
         }
 
     }
-
 
 
     public static void main(String[] args)  {

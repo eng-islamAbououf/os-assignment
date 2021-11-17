@@ -7,12 +7,13 @@ public class Parser {
     private ArrayList<String> commands = new ArrayList<>();
 
     public Parser() {
+        commandName = "" ;
         addCommands();
     }
     private void addCommands(){
         commands.add("pwd") ;
         commands.add("ls") ;
-        commands.add("ls -r") ;
+        //commands.add("ls -r") ;
         commands.add("echo") ;
         commands.add("cd") ;
         commands.add("cat") ;
@@ -21,23 +22,25 @@ public class Parser {
         commands.add("rmdir") ;
         commands.add("touch") ;
         commands.add("cp") ;
-        commands.add("cp -r") ;
+        //commands.add("cp -r") ;
     }
 
     public boolean parse(String input) {
         boolean s = false ;
-        if (input.equalsIgnoreCase(commands.get(0))
-                || input.equalsIgnoreCase(commands.get(1))
-                || input.equalsIgnoreCase(commands.get(2))
-                || input.equalsIgnoreCase(commands.get(4))){
-            commandName = input ;
-            args = new String[1] ;
-            s = true ;
-        } else {
+        if (input.lastIndexOf(' ') == -1){
             for (String x : commands){
-                if (x.equalsIgnoreCase(input.substring(0,input.indexOf(' '))))
+                if (x.equalsIgnoreCase(input)){
+                    commandName = input ;
+                    args = new String[1] ;
+                    s = true ;
+                }
+            }
+
+        } else {
+            commandName = input.substring(0,input.indexOf(' ')) ;
+            for (String x : commands){
+                if (x.equalsIgnoreCase(commandName))
                 {
-                    commandName = input.substring(0,input.indexOf(' ')) ;
                     if (commandName.equalsIgnoreCase("echo")){
                         args = new String[1] ;
                         args[0] = input.substring(input.indexOf(' ')+1) ;
@@ -61,7 +64,7 @@ public class Parser {
         while (index<inp.length()){
             if (inp.charAt(index)==' '){
                 args[i] = temp ;
-                System.out.println(args[i]);
+                //System.out.println(args[i]);
                 temp = "" ;
                 i++ ;
             }else {
@@ -90,7 +93,7 @@ public class Parser {
         this.args = args;
     }
     private int getCountOfSpaces(String args){
-        int count = 1 ;
+        int count = 0 ;
         for (char c : args.toCharArray()){
             if (c==' ')
                 count ++ ;
